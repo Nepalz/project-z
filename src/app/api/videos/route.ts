@@ -28,7 +28,7 @@ export async function GET() {
     });
 
     // Add IPFS URLs to each video
-    const videosWithIPFS = videos.map(video => ({
+    const videosWithIPFS = videos.map((video: any) => ({
       ...video,
       ipfs: {
         hash: video.hash,
