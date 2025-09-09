@@ -3,10 +3,10 @@ import { verifyIPFSHash, getIPFSMediaInfo, getIPFSUrls } from '../../../../../li
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { hash: string } }
+  { params }: { params: Promise<{ hash: string }> }
 ) {
   try {
-    const { hash } = params;
+    const { hash } = await params;
 
     if (!hash) {
       return NextResponse.json({ 
@@ -34,7 +34,7 @@ export async function GET(
   } catch (error) {
     console.error('IPFS verification error:', error);
     return NextResponse.json({
-      hash: params.hash,
+      hash: 'unknown',
       accessible: false,
       error: error instanceof Error ? error.message : 'Verification failed',
       timestamp: new Date().toISOString()

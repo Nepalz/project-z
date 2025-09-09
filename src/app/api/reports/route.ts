@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const video_id = searchParams.get('video_id');
     const user_id = searchParams.get('user_id');
     
-    let whereClause: any = {};
+    const whereClause: { video_id?: number; user_id?: number } = {};
     if (video_id) whereClause.video_id = parseInt(video_id);
     if (user_id) whereClause.user_id = parseInt(user_id);
     
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     });
     
     return NextResponse.json(reports);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 });
   }
 }

@@ -41,12 +41,8 @@ export async function POST(request: NextRequest) {
 
     console.log(`Uploading video: ${file.name} (${file.size} bytes, ${file.type})`);
 
-    // Convert file to buffer for IPFS upload
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     // Upload to IPFS
-    const ipfsResult = await uploadToIPFS(buffer, file.name, file.type);
+    const ipfsResult = await uploadToIPFS(file);
 
     if (!ipfsResult.success || !ipfsResult.file) {
       return NextResponse.json({ 

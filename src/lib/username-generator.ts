@@ -1,4 +1,6 @@
 // Nepalese revolutionaries and freedom fighters who fought for change
+import type { PrismaClient } from '@prisma/client';
+
 const nepaleseRevolutionaries = [
   'Lakhan_Thapa', // First martyr of Nepal
   'Dharma_Bhakta', // Revolutionary leader
@@ -56,7 +58,7 @@ export function generateRevolutionaryUsername(): string {
   return selectedPattern;
 }
 
-export async function generateUniqueUsername(prisma: any): Promise<string> {
+export async function generateUniqueUsername(prisma: PrismaClient): Promise<string> {
   let attempts = 0;
   const maxAttempts = 50;
   

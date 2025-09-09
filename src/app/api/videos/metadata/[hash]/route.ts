@@ -4,10 +4,10 @@ import { getIPFSMediaInfo, getIPFSUrls } from '../../../../../lib/ipfs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { hash: string } }
+  { params }: { params: Promise<{ hash: string }> }
 ) {
   try {
-    const { hash } = params;
+    const { hash } = await params;
 
     if (!hash) {
       return NextResponse.json({ 
@@ -80,7 +80,7 @@ export async function GET(
   } catch (error) {
     console.error('Video metadata error:', error);
     return NextResponse.json({
-      hash: params.hash,
+      hash: 'unknown',
       error: error instanceof Error ? error.message : 'Failed to get metadata'
     }, { status: 500 });
   }

@@ -1,5 +1,3 @@
-import FormData from 'form-data';
-
 const IPFS_SERVICE_URL = 'https://ipfs.nepalz.xyz';
 
 export interface IPFSUploadResponse {
@@ -35,29 +33,24 @@ export interface IPFSMediaInfo {
     last_accessed: string | null;
     user_ip: string;
     file_extension: string;
-    metadata: any;
+    metadata: Record<string, unknown>;
   };
   error?: string;
 }
 
 /**
- * Upload a file buffer to IPFS
+ * Upload a file to IPFS
  */
 export async function uploadToIPFS(
-  fileBuffer: Buffer, 
-  filename: string, 
-  mimetype: string
+  file: File
 ): Promise<IPFSUploadResponse> {
   try {
     const form = new FormData();
-    form.append('file', fileBuffer, {
-      filename,
-      contentType: mimetype,
-    });
+    form.append('file', file);
 
     const response = await fetch(`${IPFS_SERVICE_URL}/api/upload`, {
       method: 'POST',
-      body: form as any,
+      body: form,
     });
 
     if (!response.ok) {

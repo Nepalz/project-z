@@ -37,7 +37,7 @@ export async function GET() {
     }));
 
     return NextResponse.json(videosWithIPFS);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch videos' }, { status: 500 });
   }
 }

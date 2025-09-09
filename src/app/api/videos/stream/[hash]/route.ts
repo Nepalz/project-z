@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { hash: string } }
+  { params }: { params: Promise<{ hash: string }> }
 ) {
   try {
-    const { hash } = params;
+    const { hash } = await params;
 
     if (!hash) {
       return NextResponse.json({ 
@@ -24,7 +24,7 @@ export async function GET(
     console.error('Video stream error:', error);
     return NextResponse.json({
       error: 'Failed to stream video',
-      hash: params.hash
+      hash: 'unknown'
     }, { status: 500 });
   }
 }

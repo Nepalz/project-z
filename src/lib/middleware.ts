@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from './auth';
+import { getAuthenticatedUser, JWTPayload } from './auth';
 
-export function requireAuth(handler: (request: NextRequest, user: any) => Promise<NextResponse>) {
+export function requireAuth(handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse>) {
   return async (request: NextRequest) => {
     const user = getAuthenticatedUser(request);
     
@@ -16,9 +16,9 @@ export function requireAuth(handler: (request: NextRequest, user: any) => Promis
 }
 
 export function requireAuthWithParams(
-  handler: (request: NextRequest, context: any, user: any) => Promise<NextResponse>
+  handler: (request: NextRequest, context: { params: Promise<Record<string, string>> }, user: JWTPayload) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context: any) => {
+  return async (request: NextRequest, context: { params: Promise<Record<string, string>> }) => {
     const user = getAuthenticatedUser(request);
     
     if (!user) {

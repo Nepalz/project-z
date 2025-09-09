@@ -13,7 +13,7 @@ export async function GET() {
       message: 'Sample revolutionary usernames based on Nepalese freedom fighters:',
       usernames: sampleUsernames
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to generate usernames' }, { status: 500 });
   }
 }
