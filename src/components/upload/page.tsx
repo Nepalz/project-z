@@ -1,384 +1,406 @@
-// src/app/upload/page.tsx - Complete Desktop Responsive Version
+// src/app/upload/page.tsx
 
+"use client";
 
-import { useState } from 'react';
-import { X, Image, Zap, Upload, Camera, FileVideo, FileImage, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
+import { useRef, useState } from "react";
+import {
+  X,
+  Image as ImageIcon,
+  Upload,
+  FileVideo,
+  FileImage,
+  Trash2,
+  Info,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Header } from "@/components/layout/header";
+import { Button } from "@/components/ui/button";
+
+const MAX_LEN = 1000;
 
 export default function UploadPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'video' | 'photo'>('video');
-  const [isRecording, setIsRecording] = useState(false);
-  const [content, setContent] = useState('');
+  const [mode, setMode] = useState<"video" | "photo">("video");
+  const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sizeMB = selectedFile ? selectedFile.size / 1024 / 1024 : 0;
+  const contentPct = Math.min(
+    100,
+    Math.round((content.length / MAX_LEN) * 100)
+  );
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    validateAndSet(file);
+  };
+
+  const validateAndSet = (file?: File) => {
+    setError(null);
+    if (!file) return;
+    const okType =
+      file.type.startsWith("image/") ||
+      (file.type.startsWith("video/") &&
+        (file.type.includes("mp4") || file.type.includes("quicktime")));
+    if (!okType) {
+      setError(
+        "Unsupported file type. Use JPG/PNG for images or MP4/MOV for videos."
+      );
+      return;
     }
+    const tooBig = file.size > 1024 * 1024 * 200; // 200MB cap
+    if (tooBig) {
+      setError("File is too large. Max size is 200 MB.");
+      return;
+    }
+    setSelectedFile(file);
   };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
+    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
+    if (e.type === "dragleave") setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
     const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      setSelectedFile(files[0]);
-    }
+    if (files && files[0]) validateAndSet(files[0]);
   };
 
   const removeFile = () => {
     setSelectedFile(null);
+    setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = () => {
     if (!content.trim()) {
-      alert('Please enter some content');
+      setError("Please write a message before publishing.");
       return;
     }
-    
-    console.log('Uploading:', { content, file: selectedFile, mode });
-    alert('Post uploaded! (Demo mode)');
-    router.push('/');
+    console.log("Uploading:", { content, file: selectedFile, mode });
+    alert("Post uploaded! (Demo mode)");
+    router.push("/");
   };
+
+  const ContentHeader = () => (
+    <div className="p-6 border-b border-gray-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 rounded-t-xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Create </h1>
+          <p className="text-gray-600 mt-1">
+            What&apos;s happening in Your Area? Share your story, updates, or
+            thoughts...
+          </p>
+        </div>
+        <button
+          onClick={() => router.back()}
+          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
+          aria-label="Close"
+        >
+          <X size={22} />
+        </button>
+      </div>
+    </div>
+  );
+
+  const SegmentedToggle = () => (
+    <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1">
+      <button
+        onClick={() => setMode("photo")}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+          mode === "photo"
+            ? "bg-white shadow-sm text-gray-900"
+            : "text-gray-600 hover:text-gray-900"
+        }`}
+        aria-pressed={mode === "photo"}
+      >
+        <FileImage size={18} />
+        Photo
+      </button>
+      <button
+        onClick={() => setMode("video")}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition ${
+          mode === "video"
+            ? "bg-white shadow-sm text-gray-900"
+            : "text-gray-600 hover:text-gray-900"
+        }`}
+        aria-pressed={mode === "video"}
+      >
+        <FileVideo size={18} />
+        Video
+      </button>
+    </div>
+  );
+
+  const Dropzone = () => (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Upload media. Drag and drop or browse."
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+      }}
+      className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all outline-none
+        ${
+          dragActive
+            ? "border-orange-400 bg-orange-50"
+            : "border-gray-300 hover:border-orange-300 hover:bg-orange-50/40"
+        }
+        ${selectedFile ? "border-green-400 bg-green-50/50" : ""}`}
+      onDragEnter={handleDrag}
+      onDragLeave={handleDrag}
+      onDragOver={handleDrag}
+      onDrop={handleDrop}
+      onClick={() => fileInputRef.current?.click()}
+    >
+      {selectedFile ? (
+        <div className="space-y-4">
+          <div className="w-24 h-24 bg-green-100 rounded-2xl mx-auto flex items-center justify-center">
+            {selectedFile.type.startsWith("video/") ? (
+              <FileVideo size={34} className="text-green-700" />
+            ) : (
+              <FileImage size={34} className="text-green-700" />
+            )}
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium text-gray-900 truncate">
+              {selectedFile.name}
+            </p>
+            <p className="text-sm text-gray-500">
+              {sizeMB.toFixed(2)} MB • {selectedFile.type || "Unknown"}
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={removeFile}
+              type="button"
+              className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 text-sm font-medium"
+            >
+              <Trash2 size={16} />
+              Remove
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 text-sm font-medium"
+            >
+              <ImageIcon size={16} />
+              Change
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <ImageIcon size={48} className="mx-auto text-gray-400" />
+          <div>
+            <p className="text-gray-900 font-semibold text-base">
+              Upload media
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              Drag & drop your files here, or{" "}
+              <span className="font-medium text-orange-600">
+                click to browse
+              </span>
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-600">
+            <span className="bg-gray-100 px-2 py-1 rounded">JPG</span>
+            <span className="bg-gray-100 px-2 py-1 rounded">PNG</span>
+            <span className="bg-gray-100 px-2 py-1 rounded">MP4</span>
+            <span className="bg-gray-100 px-2 py-1 rounded">MOV</span>
+          </div>
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+    </div>
+  );
+
+  const Tips = () => (
+    <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+      <h4 className="font-medium text-blue-900 mb-2">📢 Posting Guidelines</h4>
+      <ul className="text-sm text-blue-800 space-y-1">
+        <li>• Share accurate information and verify facts when possible</li>
+        <li>
+          • Respect privacy and avoid posting personal information of others
+        </li>
+        <li>
+          • Use clear, descriptive content to help others understand the
+          situation
+        </li>
+        <li>• Report urgent situations to appropriate authorities as well</li>
+      </ul>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
-      {/* Mobile Layout */}
+
+      {/* Mobile */}
       <div className="lg:hidden">
-        {/* Camera Interface */}
-        <div className="relative h-[calc(100vh-180px)] bg-black">
-          {/* Top Controls */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between z-10">
-            <button onClick={() => router.back()}>
-              <X size={28} className="text-white" />
-            </button>
-            <div className="flex space-x-4">
-              <label className="cursor-pointer">
-                <Image size={28} className="text-white"/>
-                <input
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </label>
-              <button>
-                <Zap size={28} className="text-white" />
-              </button>
+        <div className="p-4 bg-white">
+          <div className="relative flex items-center justify-center mb-4">
+            <h1 className="text-xl font-bold text-gray-900">Create </h1>
+          </div>
+
+          <div className="mb-4 flex justify-center">
+            <SegmentedToggle />
+          </div>
+
+          <div className="mb-6">
+            <Dropzone />
+          </div>
+
+          <div className="mb-4">
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value.slice(0, MAX_LEN))}
+              placeholder="What's happening in your area? Share your story..."
+              className="w-full p-4 border border-gray-300 rounded-xl resize-none 
+             focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent 
+             text-black placeholder:text-gray-400"
+              rows={5}
+            />
+
+            <div className="flex justify-between text-sm text-gray-500 mt-2">
+              <span className="text-xs text-gray-400">
+                Be respectful and truthful in your reporting
+              </span>
+              <span
+                className={
+                  content.length > MAX_LEN * 0.8 ? "text-orange-500" : ""
+                }
+              >
+                {content.length}/{MAX_LEN}
+              </span>
             </div>
           </div>
 
-          {/* Camera View / Preview */}
-          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-            {selectedFile ? (
-              <div className="text-white text-center">
-                <div className="w-20 h-20 bg-white/20 rounded-lg mb-4 mx-auto flex items-center justify-center">
-                  {selectedFile.type.startsWith('video/') ? '🎥' : '📸'}
-                </div>
-                <p className="text-sm">{selectedFile.name}</p>
-                <p className="text-xs opacity-75 mt-1">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-            ) : (
-              <div className="text-white text-center">
-                <div className="w-16 h-16 border-2 border-white rounded-lg mb-4 mx-auto flex items-center justify-center">
-                  📷
-                </div>
-                <p>Tap to capture or select from gallery</p>
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Controls */}
-          <div className="absolute bottom-0 left-0 right-0 p-6">
-            {/* Record/Capture Button */}
-            <div className="flex justify-center mb-6">
-              <button 
-                onClick={() => setIsRecording(!isRecording)}
-                className={`w-20 h-20 border-4 border-white rounded-full flex items-center justify-center transition-all ${
-                  isRecording ? 'border-red-500' : 'border-white'
-                }`}
-              >
-                <div className={`w-16 h-16 rounded-full transition-all ${
-                  isRecording ? 'bg-red-500' : 'bg-white'
-                }`}></div>
-              </button>
-            </div>
-
-            {/* Mode Toggle */}
-            <div className="bg-gray-800 rounded-full p-1 flex mb-4">
-              <button
-                onClick={() => setMode('video')}
-                className={`flex-1 py-2 px-6 rounded-full text-center transition-colors ${
-                  mode === 'video'
-                    ? 'bg-white text-black font-medium'
-                    : 'text-white'
-                }`}
-              >
-                VIDEO
-              </button>
-              <button
-                onClick={() => setMode('photo')}
-                className={`flex-1 py-2 px-6 rounded-full text-center transition-colors ${
-                  mode === 'photo'
-                    ? 'bg-white text-black font-medium'
-                    : 'text-white'
-                }`}
-              >
-                PHOTO
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Content Input */}
-        <div className="p-4 border-t bg-white">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="What's happening in Nepal? Share your story..."
-            className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-400"
-            rows={3}
-          />
-          
-          <div className="flex justify-between items-center mt-4">
-            <div className="text-sm text-gray-500">
-              {selectedFile ? (
-                <span className="flex items-center space-x-1">
-                  {selectedFile.type.startsWith('video/') ? <FileVideo size={16} /> : <FileImage size={16} />}
-                  <span>{selectedFile.name}</span>
-                </span>
-              ) : (
-                'No media selected'
-              )}
-            </div>
-            <Button onClick={handleSubmit} disabled={!content.trim()}>
-              <Upload size={16} className="mr-2" />
-              Post
+          {/* Big Post Button */}
+          {/* Actions (mobile): Post ABOVE Cancel */}
+          <div className="pt-4 space-y-3">
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!content.trim()}
+              className="w-full bg-gradient-to-r from-red-500 to-blue-500 hover:from-red-600 hover:to-blue-600 focus:ring-2 focus:ring-red-300 text-white font-medium rounded-xl py-3"
+            >
+              <span className="flex w-full items-center justify-center gap-2">
+                <Upload size={16} />
+                <span>Post</span>
+              </span>
             </Button>
+
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="w-full text-sm text-gray-500 hover:text-gray-700"
+            >
+              Go Back
+            </button>
           </div>
+
+          {error && (
+            <p className="mt-3 text-sm text-red-600 inline-flex items-center gap-2">
+              <Info size={16} /> {error}
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Desktop Layout */}
+      {/* Desktop */}
       <div className="hidden lg:block">
-        <div className="max-w-5xl mx-auto p-6">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Create New Post</h1>
-                  <p className="text-gray-600 mt-1">Share what&apos;s happening in Nepal</p>
-                </div>
-                <button 
-                  onClick={() => router.back()}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-            </div>
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+            <ContentHeader />
 
-            {/* Content */}
             <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Side - Media Upload */}
-                <div className="space-y-6">
+              <div className="flex flex-col space-y-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Media Upload</h3>
-                    <p className="text-sm text-gray-600">Add photos or videos to your post</p>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Create
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      Share photos, videos, and updates from Nepal
+                    </p>
                   </div>
-                  
-                  {/* File Drop Zone */}
-                  <div 
-                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
-                      dragActive 
-                        ? 'border-red-400 bg-red-50' 
-                        : selectedFile 
-                          ? 'border-green-400 bg-green-50' 
-                          : 'border-gray-300 hover:border-red-400 hover:bg-red-50'
-                    }`}
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
+                  <SegmentedToggle />
+                </div>
+
+                <Dropzone />
+
+                {/* Text field below file upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Your Message
+                  </label>
+                  <textarea
+                    value={content}
+                    onChange={(e) =>
+                      setContent(e.target.value.slice(0, MAX_LEN))
+                    }
+                    placeholder="What's happening in Your Area? Share your story, updates, or thoughts..."
+                    className="w-full p-4 border border-gray-300 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent"
+                    rows={6}
+                  />
+                  <div className="flex justify-between text-sm text-gray-500 mt-2">
+                    <span className="text-xs text-gray-400">
+                      Be respectful and truthful in your reporting
+                    </span>
+                    <span
+                      className={
+                        content.length > MAX_LEN * 0.8 ? "text-orange-500" : ""
+                      }
+                    >
+                      {content.length}/{MAX_LEN}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Big Post Button for Desktop */}
+                <div className="mt-4">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!content.trim()}
+                    className="w-full py-4 text-lg font-semibold 
+             bg-gradient-to-r from-red-500 to-blue-500 
+             hover:from-red-600 hover:to-blue-600 
+             focus:ring-2 focus:ring-red-300 
+             text-white rounded-xl"
+                    size="lg"
                   >
-                    {selectedFile ? (
-                      <div className="space-y-4">
-                        <div className="w-24 h-24 bg-green-100 rounded-xl mx-auto flex items-center justify-center">
-                          {selectedFile.type.startsWith('video/') ? (
-                            <FileVideo size={32} className="text-green-600" />
-                          ) : (
-                            <FileImage size={32} className="text-green-600" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
-                          </p>
-                        </div>
-                        <button
-                          onClick={removeFile}
-                          className="inline-flex items-center space-x-2 text-red-600 hover:text-red-700 text-sm font-medium"
-                        >
-                          <Trash2 size={16} />
-                          <span>Remove file</span>
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <Camera size={48} className="mx-auto text-gray-400" />
-                        <div>
-                          <p className="text-gray-700 font-medium text-lg">Upload media</p>
-                          <p className="text-sm text-gray-500 mt-1">
-                            Drag & drop your files here, or click to browse
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500">
-                          <span className="bg-gray-100 px-2 py-1 rounded">JPG</span>
-                          <span className="bg-gray-100 px-2 py-1 rounded">PNG</span>
-                          <span className="bg-gray-100 px-2 py-1 rounded">MP4</span>
-                          <span className="bg-gray-100 px-2 py-1 rounded">MOV</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <label className="cursor-pointer absolute inset-0">
-                      <input
-                        type="file"
-                        accept="image/*,video/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-
-                  {/* Media Type Selection */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-gray-700">Content Type</label>
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => setMode('photo')}
-                        className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-                          mode === 'photo'
-                            ? 'border-red-400 bg-red-50 text-red-700'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center space-x-2">
-                          <Camera size={20} />
-                          <span className="font-medium">Photo</span>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => setMode('video')}
-                        className={`flex-1 p-3 rounded-lg border-2 transition-all ${
-                          mode === 'video'
-                            ? 'border-red-400 bg-red-50 text-red-700'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center justify-center space-x-2">
-                          <FileVideo size={20} />
-                          <span className="font-medium">Video</span>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
+                    <span className="flex w-full items-center justify-center gap-3">
+                      <Upload size={20} />
+                      <span>Publish Post</span>
+                    </span>
+                  </Button>
                 </div>
 
-                {/* Right Side - Content Input */}
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Post Content</h3>
-                    <p className="text-sm text-gray-600">Write your message and share your thoughts</p>
-                  </div>
+                <Tips />
 
-                  {/* Text Content */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-700">Message</label>
-                    <textarea
-                      value={content}
-                      onChange={(e) => setContent(e.target.value)}
-                      placeholder="What's happening in Nepal? Share your story, updates, or thoughts..."
-                      className="w-full p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent"
-                      rows={8}
-                    />
-                    <div className="flex justify-between text-sm text-gray-500">
-                      <span>Be respectful and truthful in your reporting</span>
-                      <span>{content.length}/1000</span>
-                    </div>
+                {error && (
+                  <div className="text-sm text-red-600 inline-flex items-center gap-2">
+                    <Info size={16} /> {error}
                   </div>
-
-                  {/* Post Settings */}
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="font-medium text-gray-900">Post Settings</h4>
-                    <div className="space-y-3">
-                      <label className="flex items-center space-x-3">
-                        <input type="checkbox" className="rounded border-gray-300" defaultChecked />
-                        <span className="text-sm text-gray-700">Enable sharing</span>
-                      </label>
-                      <label className="flex items-center space-x-3">
-                        <input type="checkbox" className="rounded border-gray-300" />
-                        <span className="text-sm text-gray-700">Mark as urgent/breaking news</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-4 pt-4">
-                    <Button
-                      onClick={() => router.back()}
-                      variant="secondary"
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={!content.trim()}
-                      className="flex-1 bg-red-400 hover:bg-red-500"
-                    >
-                      <Upload size={16} className="mr-2" />
-                      Publish Post
-                    </Button>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Tips Section */}
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">📢 Posting Guidelines</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Share accurate information and verify facts when possible</li>
-              <li>• Respect privacy and avoid posting personal information of others</li>
-              <li>• Use clear, descriptive content to help others understand the situation</li>
-              <li>• Report urgent situations to appropriate authorities as well</li>
-            </ul>
           </div>
         </div>
       </div>
