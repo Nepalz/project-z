@@ -1,57 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '../../../lib/prisma';
-import { getAuthenticatedUser } from '../../../lib/auth';
-import { getIPFSUrls } from '../../../lib/ipfs';
+import { getDemoPosts } from '../../../lib/demo-storage';
 
 export async function GET() {
   try {
-    const videos = await prisma.video.findMany({
-      include: {
+    const posts = getDemoPosts();
+    
+    // Convert posts to video format for compatibility
+    const videos = posts
+      .filter(post => post.mediaType === 'video')
+      .map(post => ({
+        id: post.id,
+        hash: post.id, // Using post ID as hash for demo
+        caption: post.content,
+        tags: [],
         user: {
-          select: {
-            user_id: true,
-            username: true,
-          }
+          user_id: 1,
+          username: post.username,
         },
+        createdAt: new Date(post.timestamp).toISOString(),
         _count: {
-          select: {
-            comments: true,
-            likes: true,
-            dislikes: true,
-            reports: true,
-          }
+          comments: 0,
+          likes: post.likes,
+          dislikes: post.dislikes,
+          reports: post.reports,
+        },
+        ipfs: {
+          hash: post.id,
+          accessUrls: {
+            gateway: post.mediaHash || '', // base64 data for demo
+            ipfs: post.mediaHash || '',
+            local: post.mediaHash || '',
+          },
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // Add IPFS URLs to each video
-    const videosWithIPFS = videos.map((video: any) => ({
-      ...video,
-      ipfs: {
-        hash: video.hash,
-        accessUrls: getIPFSUrls(video.hash),
-      }
-    }));
-
-    return NextResponse.json(videosWithIPFS);
-  } catch {
+      }));
+    
+    return NextResponse.json(videos);
+  } catch (error) {
+    console.error('Fetch videos error:', error);
     return NextResponse.json({ error: 'Failed to fetch videos' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const user = getAuthenticatedUser(request);
-    if (!user) {
-      return NextResponse.json({ 
-        error: 'Authentication required. Please provide a valid Bearer token.' 
-      }, { status: 401 });
-    }
-
     const { hash, caption, tags } = await request.json();
     
     if (!hash) {
@@ -67,44 +58,34 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if video with this hash already exists
-    const existingVideo = await prisma.video.findUnique({
-      where: { hash }
-    });
-
-    if (existingVideo) {
-      return NextResponse.json({ 
-        error: 'Video with this IPFS hash already exists' 
-      }, { status: 409 });
-    }
-
-    const video = await prisma.video.create({
-      data: {
-        user_id: user.user_id,
-        hash,
-        caption: caption || null,
-        tags: tags || [],
+    // For demo purposes, just return success
+    const newVideo = {
+      id: Date.now(),
+      hash,
+      caption: caption || null,
+      tags: tags || [],
+      user: {
+        user_id: 1,
+        username: 'demo_user',
       },
-      include: {
-        user: {
-          select: {
-            user_id: true,
-            username: true,
-          }
-        }
-      }
-    });
-
-    // Add IPFS URLs
-    const videoWithIPFS = {
-      ...video,
+      createdAt: new Date().toISOString(),
+      _count: {
+        comments: 0,
+        likes: 0,
+        dislikes: 0,
+        reports: 0,
+      },
       ipfs: {
-        hash: video.hash,
-        accessUrls: getIPFSUrls(video.hash),
+        hash: hash,
+        accessUrls: {
+          gateway: `https://gateway.pinata.cloud/ipfs/${hash}`,
+          ipfs: `https://ipfs.io/ipfs/${hash}`,
+          local: `http://localhost:8080/ipfs/${hash}`,
+        },
       }
     };
 
-    return NextResponse.json(videoWithIPFS, { status: 201 });
+    return NextResponse.json(newVideo, { status: 201 });
   } catch (error) {
     console.error('Create video error:', error);
     return NextResponse.json({ error: 'Failed to create video' }, { status: 500 });

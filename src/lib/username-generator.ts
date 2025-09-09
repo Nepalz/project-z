@@ -1,5 +1,4 @@
 // Nepalese revolutionaries and freedom fighters who fought for change
-import type { PrismaClient } from '@prisma/client';
 
 const nepaleseRevolutionaries = [
   'Lakhan_Thapa', // First martyr of Nepal
@@ -58,26 +57,9 @@ export function generateRevolutionaryUsername(): string {
   return selectedPattern;
 }
 
-export async function generateUniqueUsername(prisma: PrismaClient): Promise<string> {
-  let attempts = 0;
-  const maxAttempts = 50;
-  
-  while (attempts < maxAttempts) {
-    const username = generateRevolutionaryUsername();
-    
-    // Check if username already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { username }
-    });
-    
-    if (!existingUser) {
-      return username;
-    }
-    
-    attempts++;
-  }
-  
-  // Fallback with timestamp if all attempts failed
-  const timestamp = Date.now();
-  return `Revolutionary_Fighter_${timestamp}`;
+// Simple unique username generator for demo purposes
+export function generateUniqueUsername(): string {
+  const username = generateRevolutionaryUsername();
+  const timestamp = Date.now().toString().slice(-4); // Last 4 digits of timestamp
+  return `${username}_${timestamp}`;
 }
