@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
+import { getAuthenticatedUser } from '../../../lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,11 +42,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { video_id, user_id } = await request.json();
-    
-    if (!video_id || !user_id) {
+    // Check authentication
+    const user = getAuthenticatedUser(request);
+    if (!user) {
       return NextResponse.json({ 
-        error: 'video_id and user_id are required' 
+        error: 'Authentication required. Please provide a valid Bearer token.' 
+      }, { status: 401 });
+    }
+
+    const { video_id } = await request.json();
+    
+    if (!video_id) {
+      return NextResponse.json({ 
+        error: 'video_id is required' 
       }, { status: 400 });
     }
 
@@ -54,7 +63,7 @@ export async function POST(request: NextRequest) {
       where: {
         video_id_user_id: {
           video_id: parseInt(video_id),
-          user_id: parseInt(user_id),
+          user_id: user.user_id,
         }
       }
     });
@@ -69,14 +78,14 @@ export async function POST(request: NextRequest) {
     await prisma.dislike.deleteMany({
       where: {
         video_id: parseInt(video_id),
-        user_id: parseInt(user_id),
+        user_id: user.user_id,
       }
     });
 
     const like = await prisma.like.create({
       data: {
         video_id: parseInt(video_id),
-        user_id: parseInt(user_id),
+        user_id: user.user_id, // Use authenticated user's ID
       },
       include: {
         user: {
@@ -104,20 +113,27 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Check authentication
+    const user = getAuthenticatedUser(request);
+    if (!user) {
+      return NextResponse.json({ 
+        error: 'Authentication required. Please provide a valid Bearer token.' 
+      }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const video_id = searchParams.get('video_id');
-    const user_id = searchParams.get('user_id');
     
-    if (!video_id || !user_id) {
+    if (!video_id) {
       return NextResponse.json({ 
-        error: 'video_id and user_id are required' 
+        error: 'video_id is required' 
       }, { status: 400 });
     }
 
     const deletedLike = await prisma.like.deleteMany({
       where: {
         video_id: parseInt(video_id),
-        user_id: parseInt(user_id),
+        user_id: user.user_id, // Use authenticated user's ID
       }
     });
 

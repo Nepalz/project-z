@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../lib/prisma';
+import { getAuthenticatedUser } from '../../../lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,11 +48,19 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { video_id, user_id, reason } = await request.json();
-    
-    if (!video_id || !user_id || !reason) {
+    // Check authentication
+    const user = getAuthenticatedUser(request);
+    if (!user) {
       return NextResponse.json({ 
-        error: 'video_id, user_id, and reason are required' 
+        error: 'Authentication required. Please provide a valid Bearer token.' 
+      }, { status: 401 });
+    }
+
+    const { video_id, reason } = await request.json();
+    
+    if (!video_id || !reason) {
+      return NextResponse.json({ 
+        error: 'video_id and reason are required' 
       }, { status: 400 });
     }
 
@@ -60,7 +69,7 @@ export async function POST(request: NextRequest) {
       where: {
         video_id_user_id: {
           video_id: parseInt(video_id),
-          user_id: parseInt(user_id),
+          user_id: user.user_id,
         }
       }
     });
@@ -74,7 +83,7 @@ export async function POST(request: NextRequest) {
     const report = await prisma.report.create({
       data: {
         video_id: parseInt(video_id),
-        user_id: parseInt(user_id),
+        user_id: user.user_id, // Use authenticated user's ID
         reason,
       },
       include: {
