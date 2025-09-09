@@ -8,6 +8,7 @@ export async function GET() {
         user: {
           select: {
             user_id: true,
+            username: true,
           }
         },
         _count: {
@@ -15,6 +16,7 @@ export async function GET() {
             comments: true,
             likes: true,
             dislikes: true,
+            reports: true,
           }
         }
       },
@@ -47,6 +49,7 @@ export async function POST(request: NextRequest) {
         user: {
           select: {
             user_id: true,
+            username: true,
           }
         }
       }
