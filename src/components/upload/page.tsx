@@ -2,7 +2,7 @@
 
 
 import { useState } from 'react';
-import { X, Image, Zap, Upload, Camera, FileVideo, FileImage, Trash2 } from 'lucide-react';
+import { X, Image as ImageIcon, Zap, Upload, Camera, FileVideo, FileImage, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
@@ -73,7 +73,7 @@ export default function UploadPage() {
             </button>
             <div className="flex space-x-4">
               <label className="cursor-pointer">
-                <Image size={28} className="text-white"/>
+                <ImageIcon size={28} className="text-white"/>
                 <input
                   type="file"
                   accept="image/*,video/*"
