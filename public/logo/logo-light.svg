@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="89.554" height="100.284" viewBox="0 0 89.554 100.284">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #dd0b39;
+      }
+
+      .cls-2 {
+        fill: red;
+        font-size: 15px;
+        font-family: Roboto-Black, Roboto;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+      }
+
+      .cls-3 {
+        fill: #707070;
+      }
+
+      .cls-4 {
+        fill: #063f71;
+      }
+
+      .cls-5 {
+        fill: #103595;
+      }
+    </style>
+  </defs>
+  <g id="Group_1" data-name="Group 1" transform="translate(-356.489 1034.188)">
+    <path id="Path_12" data-name="Path 12" class="cls-1" d="M359.608-1017.383h49.575L380.39-994.3l44.417-9.632,20.452-21.109,1.362-1.955.54-2.62-.54-1.96-1.031-.86-1.84-.874H380.39Z" transform="translate(-1.118 -0.88)"/>
+    <text id="SPEAK_UP" data-name="SPEAK UP" class="cls-2" transform="translate(358.489 -937.904)"><tspan x="0" y="0">SPEAK</tspan><tspan class="cls-3" y="0"> </tspan><tspan class="cls-4" y="0">UP</tspan></text>
+    <path id="Path_13" data-name="Path 13" class="cls-5" d="M-.59,17.67l46.436-2.314L21.21,36.1l46.017-9.8L85.861,8.643s2.094-1.774,2.094-3.935A4.937,4.937,0,0,0,86.587.838,6.682,6.682,0,0,0,83.665-.171L21.21.838Z" transform="translate(444.445 -963.951) rotate(180)"/>
+  </g>
+</svg>
